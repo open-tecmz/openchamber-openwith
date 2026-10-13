@@ -1,0 +1,153 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Open With</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+      }
+      body {
+        background: var(--oc-bg);
+        color: var(--oc-fg);
+        font: 13px/1.5 var(--oc-font, system-ui, sans-serif);
+      }
+      #root {
+        height: 100%;
+        box-sizing: border-box;
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        overflow: hidden;
+      }
+      .ow-header {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        flex: none;
+      }
+      .ow-title-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .ow-title {
+        font-weight: 650;
+        font-size: 14px;
+      }
+      .ow-project {
+        color: var(--oc-muted);
+        font-size: 12px;
+        word-break: break-all;
+      }
+      .ow-counts {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .ow-spacer {
+        flex: 1 1 auto;
+      }
+      .ow-loading {
+        display: flex;
+        justify-content: center;
+        padding: 16px 0;
+      }
+      .ow-grid {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+        gap: 8px;
+        align-content: start;
+        padding: 2px;
+      }
+      .ow-tile {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 7px;
+        padding: 12px 8px 10px;
+        margin: 0;
+        box-sizing: border-box;
+        border: 1px solid var(--oc-border);
+        border-radius: var(--oc-radius, 10px);
+        background: var(--oc-surface, rgba(127, 127, 127, 0.05));
+        color: inherit;
+        font: inherit;
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 120ms ease, background 120ms ease, transform 120ms ease;
+      }
+      .ow-tile:not(.ow-missing):hover {
+        border-color: var(--oc-primary);
+        background: var(--oc-hover);
+        transform: translateY(-1px);
+      }
+      .ow-tile:not(.ow-missing):focus-visible {
+        outline: 2px solid var(--oc-primary);
+        outline-offset: 2px;
+      }
+      .ow-tile.ow-missing {
+        cursor: not-allowed;
+      }
+      .ow-icon-wrap {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        flex: none;
+      }
+      .ow-icon {
+        display: block;
+        width: 34px;
+        height: 34px;
+        /* Installed: the brand mark in white on its brand tile. */
+        color: #fff;
+      }
+      .ow-icon-bg {
+        fill: var(--ow-brand, var(--oc-muted));
+      }
+      /* Not installed: a neutral tile with a muted mark, in both themes. */
+      .ow-missing .ow-icon {
+        color: var(--oc-muted);
+      }
+      .ow-missing .ow-icon-bg {
+        fill: var(--oc-border);
+      }
+      .ow-missing .ow-name,
+      .ow-missing .ow-tile-status {
+        color: var(--oc-muted);
+      }
+      .ow-name {
+        max-width: 100%;
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.3;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .ow-tile-status {
+        font-size: 10px;
+        line-height: 1;
+        color: var(--oc-muted);
+      }
+      .ow-tile:not(.ow-missing) .ow-tile-status {
+        color: var(--oc-primary);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="main.js"></script>
+  </body>
+</html>

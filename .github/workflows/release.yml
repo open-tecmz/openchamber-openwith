@@ -1,0 +1,103 @@
+name: build
+
+# Package the extension and publish it for installs:
+#   - push to main  -> rolling `latest` release (always marked Latest) + refresh
+#                      the orphan `release` branch, so a git-URL install can
+#                      update in place (the host compares package.json version);
+#   - push tag vX.Y.Z -> a `vX.Y.Z` release (also marked Latest) + refresh the
+#                      `release` branch.
+# Both paths attach the same .zip of the built package for download installs.
+on:
+  push:
+    branches: [main]
+    tags: ['v*.*.*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pin the bundler: bun.minify output can differ between versions, so a fixed
+      # version keeps the published branch byte-identical for identical sources.
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - run: npm ci
+
+      - name: Build dist/
+        run: npm run build
+
+      # A vX.Y.Z tag is a versioned release; anything else (main) is the rolling
+      # "latest" build. Both are published the same way.
+      - name: Resolve release identity
+        id: meta
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+            echo "title=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+            echo "zip_name=openchamber-openwith-${GITHUB_REF_NAME}.zip" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=latest" >> "$GITHUB_OUTPUT"
+            echo "title=latest" >> "$GITHUB_OUTPUT"
+            echo "zip_name=openchamber-openwith-latest.zip" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Zip first, while dist/ is still pristine: the branch step below creates a
+      # .git inside dist/, which must not end up in the archive.
+      # NOTE: the env var must NOT be called "ZIP" (nor "ZIPOPT"): Info-ZIP's zip
+      # reads $ZIP / $ZIPOPT as default arguments, which overrides the archive
+      # path and writes the zip into dist/ instead of the workspace root, so the
+      # publish step below then fails with "no matches found for ...".
+      - name: Zip package
+        env:
+          ZIP_NAME: ${{ steps.meta.outputs.zip_name }}
+        run: |
+          set -euo pipefail
+          (cd dist && zip -qr "../${ZIP_NAME}" . -x '.git/*')
+          ls -l "${ZIP_NAME}"
+
+      # Publish the built package as an orphan `release` branch. It replaces the
+      # previous build, so the branch has a single commit and no source files.
+      - name: Publish release branch
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          cd dist
+          git init -q
+          git checkout -q -b release
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "build ${TAG}"
+          git remote add origin "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push -f origin release
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.meta.outputs.tag }}
+          TITLE: ${{ steps.meta.outputs.title }}
+          ZIP_NAME: ${{ steps.meta.outputs.zip_name }}
+        run: |
+          set -euo pipefail
+          notes="Built from ${GITHUB_SHA}."
+          # --latest: every release, rolling "latest" or a vX.Y.Z tag, becomes Latest.
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            gh release upload "${TAG}" "${ZIP_NAME}" --clobber
+            gh release edit "${TAG}" --title "${TITLE}" --notes "${notes}" --latest
+          else
+            gh release create "${TAG}" "${ZIP_NAME}" --title "${TITLE}" --notes "${notes}" --latest
+          fi

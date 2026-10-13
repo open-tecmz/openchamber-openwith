@@ -1,0 +1,48 @@
+{
+  "name": "openchamber-openwith",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Open the current project in another app from OpenChamber: a rail panel that lists your editors, terminals and file managers, greys out the ones that are not installed, and opens the project in the one you pick.",
+  "keywords": [
+    "openchamber",
+    "openchamber-extension",
+    "open-with",
+    "editor",
+    "ide",
+    "vscode"
+  ],
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node _temp/test-service.mjs && bun _temp/test-i18n.ts"
+  },
+  "openchamber": {
+    "apiVersion": 1,
+    "engines": {
+      "openchamber": ">=2.0.0"
+    },
+    "contributes": {
+      "panel": {
+        "id": "openwith",
+        "name": "Open With",
+        "icon": "icon.svg",
+        "entry": "panel/index.html"
+      },
+      "page": true,
+      "service": {
+        "entry": "service/main.js",
+        "runtime": "host",
+        "permissions": {
+          "exec": ["open", "cmd", "which", "where", "code", "cursor", "zed", "subl", "ghostty", "warp", "powershell", "explorer", "xdg-open"]
+        }
+      }
+    }
+  },
+  "devDependencies": {
+    "@openchamber/sdk": "^2.0.4",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}
