@@ -16,7 +16,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "npm run build && node _temp/test-service.mjs && bun _temp/test-i18n.ts"
+    "test": "npm run build && node _temp/test-service.mjs && bun _temp/test-i18n.ts && bun _temp/test-weblinks.ts"
   },
   "openchamber": {
     "apiVersion": 1,

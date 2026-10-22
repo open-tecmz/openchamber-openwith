@@ -27,6 +27,18 @@ export type AppIcon = {
 
 const glyph = (d: string): string => `<path fill="currentColor" d="${d}"/>`;
 
+/**
+ * A generic mark for custom web links, which have no vendor brand: a globe on a
+ * neutral blue tile, so it sits beside the app tiles without impersonating one.
+ * The circle nearly fills the 24-unit box so it reads as large as a brand mark.
+ */
+export const WEB_LINK_ICON: AppIcon = {
+  color: '#2563EB',
+  glyph:
+    '<circle cx="12" cy="12" r="10.6" fill="none" stroke="currentColor" stroke-width="1.7"/>'
+    + '<path d="M2.4 12h19.2M12 2.4c3.1 2.7 3.1 16.5 0 19.2M12 2.4c-3.1 2.7-3.1 16.5 0 19.2" fill="none" stroke="currentColor" stroke-width="1.5"/>',
+};
+
 export const APP_ICONS: Record<AppIconId, AppIcon> = {
   vscode: {
     color: '#007ACC',

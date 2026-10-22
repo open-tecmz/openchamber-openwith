@@ -17,7 +17,7 @@ help: ## List the available targets
 package: build ## Build, then zip dist/ into openchamber-openwith.zip
 	cd dist && zip -qr ../openchamber-openwith.zip .
 
-test: ## Build, then run the service test and the i18n test
+test: ## Build, then run the service, i18n and web-link tests
 	npm run test
 
 typecheck: ## Type-check the sources

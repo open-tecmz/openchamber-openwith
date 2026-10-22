@@ -45,6 +45,9 @@ installed app and the project OpenChamber has open is opened in it.
 - **Editors, terminals, file managers** — VS Code, Cursor, Zed, Sublime Text,
   TextMate, Antigravity, Xcode, Android Studio, Terminal, iTerm2, Ghostty, Warp,
   and the platform's file manager (Finder / File Explorer / Files).
+- **Your own web links** — save URL templates such as
+  `https://example.com/?path={path}` and open the project on that page;
+  `{path}` and `{pathUrlEncode}` are filled with the project directory.
 - **Per-platform detection** — `.app` bundles and PATH on macOS; PATH on Windows
   and Linux.
 - **Refresh on demand** — re-check the machine after you install something.
@@ -88,6 +91,11 @@ The catalog itself (ids, names, icons, which command to use) lives in
 `src/apps.ts`, shared by the panel and the service. The panel never sees the
 filesystem or PATH; the service never draws anything.
 
+Custom web links skip the service: the panel fills the template with the project
+directory and hands the finished URL to the host (`openUrl`), which opens it in
+the browser. The templates are kept in the extension's own storage, so they work
+while the service is off and never touch the project files.
+
 ## Install
 
 OpenChamber **2.0.0 or newer**, web or desktop.
@@ -118,6 +126,27 @@ Open the **Open With** panel from the extensions area of the rail:
 
 `contributes.page` also opens the same panel full-screen.
 
+### Custom web links
+
+Link tiles sit in the same grid as the apps, after the installed ones. Press the
+dashed **Add link** tile (or the pencil on an existing link tile) to open the
+editor dialog; give the link a name (optional) and enter a template. You can keep
+up to eight links, each with its own tile. Two placeholders are filled from the
+project OpenChamber has open:
+
+- `{path}` — the project directory exactly as reported (raw, so a path with `&`,
+  `#` or `?` can break a query value);
+- `{pathUrlEncode}` — the same directory through `encodeURIComponent`, which is
+  what a query value should use.
+
+So `https://example.com/?path={pathUrlEncode}` becomes
+`https://example.com/?path=%2FUsers%2Fyou%2Fproject`, while
+`https://example.com/?path={path}` keeps the slashes readable. Click a link tile
+to open it in your browser; the pencil in its corner opens the same dialog to
+edit or delete it. Up to eight links are kept in the extension's own storage, so
+they survive restarts and follow every project. Opening a link needs no local
+service, so the link tiles stay usable while the service is off.
+
 ## Permissions
 
 | Capability | Why |
@@ -128,7 +157,8 @@ The service declares `permissions.exec` with the launchers it may run — `open`
 plus the app commands, the `which` / `where` lookup and, on Windows, `cmd` (the
 editor launchers are `.cmd` files there) — so the approval dialog says what it
 intends to run. The extension asks for no other capability: it reads
-no session data and no project files.
+no session data and no project files. The custom web links live in the
+extension's own storage, which needs no extra capability.
 
 ## Limitations
 

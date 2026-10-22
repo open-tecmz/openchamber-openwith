@@ -69,6 +69,108 @@
         align-content: start;
         padding: 2px;
       }
+      .ow-body {
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      /* Custom web links: a grid tile with a pencil in its corner, plus an add tile. */
+      .ow-tile.ow-link-tile {
+        position: relative;
+        padding: 0;
+      }
+      .ow-tile.ow-link-tile.ow-editing {
+        border-color: var(--oc-primary);
+      }
+      .ow-link-hit {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 7px;
+        width: 100%;
+        padding: 12px 8px 10px;
+        margin: 0;
+        border: 0;
+        border-radius: inherit;
+        background: none;
+        color: inherit;
+        font: inherit;
+        text-align: center;
+        cursor: pointer;
+      }
+      .ow-link-hit:focus-visible {
+        outline: 2px solid var(--oc-primary);
+        outline-offset: -2px;
+      }
+      .ow-link-hit:disabled {
+        cursor: not-allowed;
+      }
+      .ow-link-edit {
+        position: absolute;
+        top: 3px;
+        right: 3px;
+        z-index: 1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        padding: 0;
+        margin: 0;
+        border: 0;
+        border-radius: 5px;
+        background: none;
+        color: var(--oc-muted);
+        opacity: 0.75;
+        cursor: pointer;
+      }
+      .ow-link-tile:hover .ow-link-edit,
+      .ow-link-edit:focus-visible {
+        opacity: 1;
+        background: var(--oc-hover);
+        color: var(--oc-fg);
+      }
+      .ow-link-edit:disabled {
+        cursor: not-allowed;
+        opacity: 0.4;
+      }
+      /* Add link: a dashed tile so it reads as an action, not as an installed app. */
+      .ow-tile.ow-add-tile {
+        border-style: dashed;
+        color: var(--oc-muted);
+      }
+      /* The plus gets the same 34px footprint as a brand tile, so rows line up. */
+      .ow-add-icon-wrap {
+        border: 1px dashed var(--oc-border);
+        border-radius: 10px;
+        color: var(--oc-muted);
+      }
+      .ow-add-icon {
+        width: 18px;
+        height: 18px;
+      }
+      .ow-link-form {
+        flex: none;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        padding: 8px;
+        border: 1px solid var(--oc-border);
+        border-radius: 8px;
+        background: var(--oc-surface, rgba(127, 127, 127, 0.05));
+      }
+      .ow-link-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .ow-link-warn {
+        margin: 0;
+        font-size: 11px;
+        color: var(--oc-error-text, var(--oc-error, #dc2626));
+      }
       .ow-tile {
         display: flex;
         flex-direction: column;
@@ -143,6 +245,74 @@
       }
       .ow-tile:not(.ow-missing) .ow-tile-status {
         color: var(--oc-primary);
+      }
+      /* Web links and the add tile keep a muted secondary line. */
+      .ow-tile.ow-link-tile .ow-tile-status,
+      .ow-tile.ow-add-tile .ow-tile-status {
+        color: var(--oc-muted);
+      }
+      /* Add/edit dialog over the panel. */
+      .ow-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.48);
+      }
+      .ow-modal-card {
+        width: min(400px, 100%);
+        max-height: 100%;
+        overflow: auto;
+        box-sizing: border-box;
+        padding: 12px;
+        border: 1px solid var(--oc-border);
+        border-radius: var(--oc-radius, 10px);
+        background: var(--oc-elevated);
+        color: var(--oc-fg);
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+      }
+      .ow-modal-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .ow-modal-title {
+        flex: 1 1 auto;
+        font-size: 13px;
+        font-weight: 650;
+      }
+      .ow-modal-close {
+        flex: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        padding: 0;
+        margin: 0;
+        border: 0;
+        border-radius: 6px;
+        background: none;
+        color: var(--oc-muted);
+        cursor: pointer;
+      }
+      .ow-modal-close:not(:disabled):hover {
+        background: var(--oc-hover);
+        color: var(--oc-fg);
+      }
+      .ow-modal-close:disabled {
+        cursor: not-allowed;
+        opacity: 0.4;
+      }
+      /* The form is the card's body, so it drops its own frame. */
+      .ow-modal .ow-link-form {
+        padding: 0;
+        border: 0;
+        background: none;
       }
     </style>
   </head>
