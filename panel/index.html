@@ -107,6 +107,13 @@
       .ow-link-hit:disabled {
         cursor: not-allowed;
       }
+      /* The template's host, muted under the link's name; long hosts are clipped. */
+      .ow-link-host {
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
       .ow-link-edit {
         position: absolute;
         top: 3px;
@@ -123,18 +130,28 @@
         border-radius: 5px;
         background: none;
         color: var(--oc-muted);
-        opacity: 0.75;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 120ms ease;
         cursor: pointer;
       }
       .ow-link-tile:hover .ow-link-edit,
-      .ow-link-edit:focus-visible {
+      .ow-link-tile:focus-within .ow-link-edit {
         opacity: 1;
+        pointer-events: auto;
         background: var(--oc-hover);
         color: var(--oc-fg);
       }
       .ow-link-edit:disabled {
         cursor: not-allowed;
         opacity: 0.4;
+      }
+      /* Touch surfaces have no hover: keep the control reachable there. */
+      @media (hover: none) {
+        .ow-link-edit:not(:disabled) {
+          opacity: 1;
+          pointer-events: auto;
+        }
       }
       /* Add link: a dashed tile so it reads as an action, not as an installed app. */
       .ow-tile.ow-add-tile {
