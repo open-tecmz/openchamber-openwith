@@ -44,6 +44,9 @@
 - **自定义网页链接** —— 保存形如 `https://example.com/?path={path}` 的链接模板，
   在网页中打开当前项目；`{path}` 与 `{pathUrlEncode}` 会替换为项目路径。
 - **按平台检测** —— macOS 查 `.app` 与 PATH；Windows、Linux 查 PATH。
+- **WSL 文件管理器** —— 当 `explorer.exe` 和 `wslpath` 可用时，直接打开 Windows
+  文件资源管理器，并将 Linux 路径转换为 Windows/UNC 路径。正常交接时返回退出码 1
+  且无错误输出不再误报失败，其余错误仍会报告。Windows 互操作不可用时回退到 `xdg-open`。
 - **随时刷新** —— 装了新软件后点「刷新」重新检测。
 - **可事后查看的日志** —— 服务把日志写入
   `~/.config/openchamber-openwith/logs/service.log`（10 MB 滚动），打开失败后可查原因。

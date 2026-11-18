@@ -50,6 +50,10 @@ installed app and the project OpenChamber has open is opened in it.
   `{path}` and `{pathUrlEncode}` are filled with the project directory.
 - **Per-platform detection** — `.app` bundles and PATH on macOS; PATH on Windows
   and Linux.
+- **WSL file manager** — opens Windows File Explorer directly when `explorer.exe`
+  and `wslpath` are available, converting Linux paths to Windows/UNC paths.
+  Explorer's exit-1 handoff with no error output is accepted; other failures
+  remain errors. Falls back to `xdg-open` when Windows interop is unavailable.
 - **Refresh on demand** — re-check the machine after you install something.
 - **A log you can read later** — the service writes to
   `~/.config/openchamber-openwith/logs/service.log` (10 MB, rolling), so a failed
