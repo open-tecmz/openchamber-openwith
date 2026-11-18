@@ -80,6 +80,8 @@ let loadError: string | null = null;
 /** App id currently being launched, so its tile shows a spinner. */
 let openingApp: string | null = null;
 let refreshing = false;
+const LOGIN_SHELL_KEY = 'useLoginShell';
+let useLoginShell = false;
 let renderKey = '';
 let panelMounted = false;
 let mounted = false;
@@ -129,10 +131,10 @@ const service = {
     return this.text('GET', '/health');
   },
   apps(refresh: boolean): Promise<AppsAnswer> {
-    return this.json('GET', '/apps', refresh ? { refresh: '1' } : undefined);
+    return this.json('GET', '/apps', { refresh: refresh ? '1' : '0', loginShell: useLoginShell ? '1' : '0' });
   },
   open(directory: string, app: string): Promise<{ ok: boolean; error?: string }> {
-    return this.json('POST', '/open', undefined, JSON.stringify({ directory, app }));
+    return this.json('POST', '/open', undefined, JSON.stringify({ directory, app, loginShell: useLoginShell }));
   },
 };
 
@@ -623,6 +625,7 @@ const render = (): void => {
     installed: installedSignature(),
     openingApp,
     refreshing,
+    useLoginShell,
     // Draft text is left out on purpose: a repaint would replace the field and
     // drop the caret, so only the draft's identity and its error repaint it.
     webLinks: webLinks.map((link) => `${link.id}:${link.name}:${link.url}`).join('|'),
@@ -673,6 +676,30 @@ const paint = (): void => {
     disposables.push(mountBanner(root, { tone: 'warning', title: t('banner.off.title'), body: t('banner.off.body') }));
   } else if (mode === 'error' || mode === 'unknown') {
     disposables.push(mountBanner(root, { tone: 'error', title: t('banner.error.title'), body: t('banner.error.body') }));
+  }
+
+  if (os === 'linux' || os === 'macos') {
+    const label = header.appendChild(el('label', 'ow-counts'));
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = useLoginShell;
+    checkbox.disabled = refreshing || openingApp !== null;
+    label.appendChild(checkbox);
+    label.appendChild(el('span', '', t('shell.login')));
+    label.title = t('shell.hint');
+    checkbox.addEventListener('change', () => {
+      void (async () => {
+        const next = checkbox.checked;
+        try {
+          await host.storage.set(LOGIN_SHELL_KEY, next);
+          useLoginShell = next;
+          await refresh();
+        } catch {
+          checkbox.checked = useLoginShell;
+          await host.toast({ kind: 'error', message: t('shell.saveFailed') });
+        }
+      })();
+    });
   }
 
   if (!project || !directory) {
@@ -761,7 +788,11 @@ const switchDirectory = async (next: string | null): Promise<void> => {
 const preparePanel = async (): Promise<void> => {
   // The links come from storage and the apps from the service; neither waits on
   // the other, so a slow or missing service still shows the saved links.
-  await Promise.all([detectMode(), loadWebLinks()]);
+  await Promise.all([
+    detectMode(),
+    loadWebLinks(),
+    host.storage.get(LOGIN_SHELL_KEY).then((value) => { useLoginShell = value === true; }).catch(() => {}),
+  ]);
   render();
   if (mode === 'service') await loadApps(false);
   render();

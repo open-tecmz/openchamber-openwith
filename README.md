@@ -51,6 +51,13 @@ installed app and the project OpenChamber has open is opened in it.
 - **Per-platform detection** — `.app` bundles and PATH on macOS; PATH on Windows
   and Linux.
 - **Refresh on demand** — re-check the machine after you install something.
+- **Optional login shell** — on macOS/Linux (including WSL), enable **Use login
+  shell** in the panel to detect and launch apps using `$SHELL -lc` (falling
+  back to your account's shell). The setting is saved for the extension and
+  defaults to off. Supports sh, bash, zsh, ksh and dash; Windows is unchanged.
+  Login startup files run with your permissions. This is non-interactive:
+  `.zshrc` is not loaded, so tools configured only there may still be missing.
+  Existing editor/server processes may retain their old environment.
 - **A log you can read later** — the service writes to
   `~/.config/openchamber-openwith/logs/service.log` (10 MB, rolling), so a failed
   launch can be inspected after the fact.

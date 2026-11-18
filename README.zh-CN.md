@@ -45,6 +45,11 @@
   在网页中打开当前项目；`{path}` 与 `{pathUrlEncode}` 会替换为项目路径。
 - **按平台检测** —— macOS 查 `.app` 与 PATH；Windows、Linux 查 PATH。
 - **随时刷新** —— 装了新软件后点「刷新」重新检测。
+- **可选登录 shell** —— 在 macOS/Linux（包括 WSL）面板中启用「使用登录 shell」，
+  即通过 `$SHELL -lc` 检测并启动应用；未设置时使用账户的 shell。设置保存在扩展中，
+  默认关闭。支持 sh、bash、zsh、ksh 和 dash，Windows 不变。登录启动文件以当前用户权限
+  执行；此模式非交互式，不加载 `.zshrc`，仅在其中配置的工具仍可能不可用。
+  已运行的编辑器或服务进程可能保留旧环境。
 - **可事后查看的日志** —— 服务把日志写入
   `~/.config/openchamber-openwith/logs/service.log`（10 MB 滚动），打开失败后可查原因。
 - **面板多语言** —— 跟随 OpenChamber 语言（English、简体中文、繁體中文）。

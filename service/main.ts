@@ -23,6 +23,7 @@ import path from 'node:path';
 
 import { appsForOS, findApp, type OpenApp, type OpenAppOS } from '../src/apps.ts';
 import { LOG_FILE, log } from './logger.ts';
+import { loginShellCommand } from './loginShell.ts';
 
 const PORT = Number(process.env.OPENCHAMBER_SERVICE_PORT);
 const TOKEN = process.env.OPENCHAMBER_SERVICE_TOKEN ?? '';
@@ -44,16 +45,19 @@ const DETECTION_TTL_MS = 30_000;
 
 type Detection = { at: number; installed: Record<string, boolean> };
 
-let detection: Detection | null = null;
+const detections = new Map<boolean, Detection>();
 
 /** Is `command` on PATH? `which` on POSIX, `where` on Windows. */
-const onPath = (command: string): Promise<boolean> =>
+const onPath = (command: string, loginShell: boolean): Promise<boolean> =>
   new Promise((resolve) => {
     const finder = process.platform === 'win32' ? 'where' : 'which';
     let child: ChildProcess;
     try {
       // windowsHide stops a console-less host from flashing a window per lookup.
-      child = spawn(finder, [command], { stdio: 'ignore', windowsHide: true });
+      const plan = loginShell
+        ? loginShellCommand('sh', ['-c', 'command -v "$1" >/dev/null', 'openwith', command])
+        : { file: finder, args: [command] };
+      child = spawn(plan.file, plan.args, { stdio: 'ignore', windowsHide: true, timeout: 5000 });
     } catch {
       resolve(false);
       return;
@@ -85,37 +89,39 @@ const macBundleExists = async (name: string): Promise<boolean> => {
   return false;
 };
 
-const appInstalled = async (app: OpenApp): Promise<boolean> => {
+const appInstalled = async (app: OpenApp, loginShell: boolean): Promise<boolean> => {
   if (os === 'macos') {
     // A bundle is the usual install; a command covers Homebrew CLIs and editors
     // whose `code`-style launcher was added to PATH.
     if (app.macApp && (await macBundleExists(app.macApp))) return true;
-    if (app.command && (await onPath(app.command))) return true;
+    if (app.command && (await onPath(app.command, loginShell))) return true;
     return false;
   }
-  if (app.command) return onPath(app.command);
+  if (app.command) return onPath(app.command, loginShell);
   return false;
 };
 
-const detect = async (): Promise<Detection> => {
+const detect = async (loginShell: boolean): Promise<Detection> => {
   const apps = appsForOS(os);
-  const flags = await Promise.all(apps.map((app) => appInstalled(app)));
+  const flags = await Promise.all(apps.map((app) => appInstalled(app, loginShell)));
   const installed: Record<string, boolean> = {};
   apps.forEach((app, index) => {
     installed[app.id] = flags[index];
   });
-  detection = { at: Date.now(), installed };
+  const detection = { at: Date.now(), installed };
+  detections.set(loginShell, detection);
   const found = apps.filter((app, index) => flags[index]).map((app) => app.id);
   log(`detected installed apps: ${found.length > 0 ? found.join(', ') : '(none)'}`);
   return detection;
 };
 
 /** Cached detection, re-run when stale or when the panel asks for a refresh. */
-const detectCached = (force: boolean): Promise<Detection> => {
+const detectCached = (force: boolean, loginShell: boolean): Promise<Detection> => {
+  const detection = detections.get(loginShell);
   if (!force && detection && Date.now() - detection.at < DETECTION_TTL_MS) {
     return Promise.resolve(detection);
   }
-  return detect();
+  return detect(loginShell);
 };
 
 // ---------------------------------------------------------------------------
@@ -163,7 +169,10 @@ const quoteWindows = (value: string): string => `"${value.replace(/"/g, '""')}"`
  * a batch file cannot be started directly; real executables (the terminal, the
  * file manager) are started as-is, so a terminal still gets its own window.
  */
-const planFor = async (command: string, args: string[]): Promise<LaunchPlan> => {
+const planFor = async (command: string, args: string[], loginShell: boolean): Promise<LaunchPlan> => {
+  if (loginShell && os !== 'windows') {
+    return { ...loginShellCommand(command, args), shell: false, windowsHide: false };
+  }
   if (os === 'windows' && (await isWindowsBatch(command))) {
     return {
       file: [command, ...args].map(quoteWindows).join(' '),
@@ -176,17 +185,17 @@ const planFor = async (command: string, args: string[]): Promise<LaunchPlan> => 
 };
 
 /** The command that opens `directory` in `app`, or null when there is none. */
-const launchPlan = async (app: OpenApp, directory: string): Promise<LaunchPlan | null> => {
+const launchPlan = async (app: OpenApp, directory: string, loginShell: boolean): Promise<LaunchPlan | null> => {
   // On macOS, an editor's own CLI is the reliable way to open a folder: it
   // hands the path to a running instance and raises its window, and it still
   // works when LaunchServices declines to launch the app from this process.
   if (app.command && (os !== 'macos' || app.preferCommand)) {
-    return planFor(app.command, [directory]);
+    return planFor(app.command, [directory], loginShell);
   }
   if (os === 'macos' && app.macApp) {
     return { file: 'open', args: ['-a', app.macApp, directory], shell: false, windowsHide: false };
   }
-  if (app.command) return planFor(app.command, [directory]);
+  if (app.command) return planFor(app.command, [directory], loginShell);
   return null;
 };
 
@@ -295,13 +304,15 @@ const server = http.createServer((req, res) => {
     // the catalog it already carries.
     if (url.pathname === '/apps' && req.method === 'GET') {
       const force = url.searchParams.get('refresh') === '1';
-      const result = await detectCached(force);
+      const loginShell = os !== 'windows' && url.searchParams.get('loginShell') === '1';
+      const result = await detectCached(force, loginShell);
       json(res, 200, { ok: true, os, installed: result.installed, at: result.at });
       return;
     }
 
     if (url.pathname === '/open' && req.method === 'POST') {
-      const body = JSON.parse((await readBody(req)) || '{}') as { directory?: unknown; app?: unknown };
+      const body = JSON.parse((await readBody(req)) || '{}') as { directory?: unknown; app?: unknown; loginShell?: unknown };
+      const loginShell = os !== 'windows' && body.loginShell === true;
       const directory = resolveDirectory(body.directory);
       const appId = typeof body.app === 'string' ? body.app : '';
       if (!directory || !appId) {
@@ -328,13 +339,13 @@ const server = http.createServer((req, res) => {
         json(res, 400, { ok: false, error: 'unknown-app' });
         return;
       }
-      const plan = await launchPlan(app, directory);
+      const plan = await launchPlan(app, directory, loginShell);
       if (!plan) {
         log(`open refused: unsupported (${app.id})`);
         json(res, 400, { ok: false, error: 'unsupported' });
         return;
       }
-      const state = await detectCached(false);
+      const state = await detectCached(false, loginShell);
       if (!state.installed[app.id]) {
         log(`open refused: not-installed (${app.id})`);
         json(res, 409, { ok: false, error: 'not-installed' });
