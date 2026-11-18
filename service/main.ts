@@ -23,6 +23,7 @@ import path from 'node:path';
 
 import { appsForOS, findApp, type OpenApp, type OpenAppOS } from '../src/apps.ts';
 import { LOG_FILE, log } from './logger.ts';
+import { explorerDirectory, explorerHandoff, isWsl } from './wsl.ts';
 
 const PORT = Number(process.env.OPENCHAMBER_SERVICE_PORT);
 const TOKEN = process.env.OPENCHAMBER_SERVICE_TOKEN ?? '';
@@ -62,6 +63,9 @@ const onPath = (command: string): Promise<boolean> =>
     child.on('close', (code) => resolve(code === 0));
   });
 
+const wslExplorerAvailable = async (): Promise<boolean> =>
+  os === 'linux' && isWsl() && (await onPath('explorer.exe')) && (await onPath('wslpath'));
+
 /** Does an app bundle with this name sit in one of the usual macOS folders? */
 const macBundleExists = async (name: string): Promise<boolean> => {
   const candidates = [
@@ -86,6 +90,7 @@ const macBundleExists = async (name: string): Promise<boolean> => {
 };
 
 const appInstalled = async (app: OpenApp): Promise<boolean> => {
+  if (app.id === 'file-manager' && await wslExplorerAvailable()) return true;
   if (os === 'macos') {
     // A bundle is the usual install; a command covers Homebrew CLIs and editors
     // whose `code`-style launcher was added to PATH.
@@ -129,6 +134,8 @@ type LaunchPlan = {
   shell: boolean;
   /** Hide the console window; only the cmd.exe wrapper needs it. */
   windowsHide: boolean;
+  /** Only the WSL Explorer launcher has its exit-1 handoff convention. */
+  wslExplorer?: boolean;
 };
 
 /**
@@ -177,6 +184,15 @@ const planFor = async (command: string, args: string[]): Promise<LaunchPlan> => 
 
 /** The command that opens `directory` in `app`, or null when there is none. */
 const launchPlan = async (app: OpenApp, directory: string): Promise<LaunchPlan | null> => {
+  if (app.id === 'file-manager' && await wslExplorerAvailable()) {
+    return {
+      file: 'explorer.exe',
+      args: [await explorerDirectory(directory)],
+      shell: false,
+      windowsHide: true,
+      wslExplorer: true,
+    };
+  }
   // On macOS, an editor's own CLI is the reliable way to open a folder: it
   // hands the path to a running instance and raises its window, and it still
   // works when LaunchServices declines to launch the app from this process.
@@ -245,8 +261,8 @@ const launch = (plan: LaunchPlan): Promise<void> =>
       if (stderr.length < 4_000) stderr += chunk.toString();
     });
     child.once('error', (error) => finish(error));
-    child.once('exit', (code) => {
-      if (code === 0) finish();
+    child.once('close', (code) => {
+      if (code === 0 || (plan.wslExplorer && explorerHandoff(code, stderr))) finish();
       else finish(new Error(stderr.trim() || `exited with code ${code}`));
     });
     timer = setTimeout(() => finish(), LAUNCH_TIMEOUT_MS);

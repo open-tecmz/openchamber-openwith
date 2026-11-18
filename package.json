@@ -35,7 +35,7 @@
         "entry": "service/main.js",
         "runtime": "host",
         "permissions": {
-          "exec": ["open", "cmd", "which", "where", "code", "cursor", "zed", "subl", "ghostty", "warp", "powershell", "explorer", "xdg-open"]
+          "exec": ["open", "cmd", "which", "where", "code", "cursor", "zed", "subl", "ghostty", "warp", "powershell", "explorer", "explorer.exe", "wslpath", "xdg-open"]
         }
       }
     }
