@@ -56,7 +56,8 @@ installed app and the project OpenChamber has open is opened in it.
   back to your account's shell). The setting is saved for the extension and
   defaults to off. Supports sh, bash, zsh, ksh and dash; Windows is unchanged.
   Login startup files run with your permissions. This is non-interactive:
-  `.zshrc` is not loaded, so tools configured only there may still be missing.
+  interactive-only shell configuration is not loaded, so tools configured only
+  there may still be missing.
   Existing editor/server processes may retain their old environment.
 - **A log you can read later** — the service writes to
   `~/.config/openchamber-openwith/logs/service.log` (10 MB, rolling), so a failed

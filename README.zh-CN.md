@@ -48,7 +48,7 @@
 - **可选登录 shell** —— 在 macOS/Linux（包括 WSL）面板中启用「使用登录 shell」，
   即通过 `$SHELL -lc` 检测并启动应用；未设置时使用账户的 shell。设置保存在扩展中，
   默认关闭。支持 sh、bash、zsh、ksh 和 dash，Windows 不变。登录启动文件以当前用户权限
-  执行；此模式非交互式，不加载 `.zshrc`，仅在其中配置的工具仍可能不可用。
+  执行；此模式非交互式，不加载仅用于交互模式的 shell 配置，仅在其中配置的工具仍可能不可用。
   已运行的编辑器或服务进程可能保留旧环境。
 - **可事后查看的日志** —— 服务把日志写入
   `~/.config/openchamber-openwith/logs/service.log`（10 MB 滚动），打开失败后可查原因。
